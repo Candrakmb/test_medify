@@ -1,4 +1,4 @@
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     @csrf
     @if($method == 'edit')
     <div class="form-group">
@@ -11,6 +11,18 @@
         <label>Nama</label>
         <input type="text" class="form-control" name="nama" required  value="{{$item->nama ?? ''}}">
     </div>
+
+    <div class="form-group">
+        <label>Kategori</label>
+        <select name="kategori_item_id" id="kategori_id" class="form-control">
+            <option value="">-- Pilih Kategori --</option>
+            @foreach($kategori_items as $kategori)
+
+                <option value="{{ $kategori->id == old('kategori_id', $selectedKategoriId ?? '') ? 'selected' : '' }}">{{ $kategori->nama }}</option>
+            @endforeach
+        </select>
+    </div>
+
 
     <div class="form-group">
         <label>Harga Beli</label>
@@ -46,6 +58,13 @@
             <optio @if($selected == 'Umum') selected @endif>Umum</option>
             <optio @if($selected == 'ATK') selected @endif>ATK</option>
         </select>
+    </div>
+    <div>
+        <img id="perview" src="#" alt="Preview Gambar" style="max-width: 200px; display: none;">
+    </div>
+    <div>
+        <label>Gambar</label>
+        <input type="file" class="form-control" onchange="foto(event)" name="foto" >
     </div>
 
     <button class="btn btn-primary mt-3">Submit</button>

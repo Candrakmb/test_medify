@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriItem;
 use App\Models\MasterItem;
 use Illuminate\Http\Request;
 
@@ -19,11 +20,18 @@ class MasterItemsController extends Controller
         $hargamin = $request->hargamin;
         $hargamax = $request->hargamax;
 
-        $data_search = MasterItem::query();
+        $data_search = MasterItem::with(['KategoriItem'])->query();
 
         if (!empty($kode)) $data_search = $data_search->where('kode', $kode);
         if (!empty($nama)) $data_search = $data_search->where('nama', 'LIKE', '%' . $nama . '%');
-        if (!empty($hargamin)) $data_search = $data_search->where('harga_beli', '>=', $hargamin)->where('harga_beli', '<=', $hargamax);
+
+        if (!empty($hargamin) && !empty($hargamax)) {
+            $data_search = $data_search->whereBetween('harga_beli', [$hargamin, $hargamax]);
+        } elseif (!empty($hargamin)) {
+            $data_search = $data_search->where('harga_beli', '>=', $hargamin);
+        } elseif (!empty($hargamax)) {
+            $data_search = $data_search->where('harga_beli', '<=', $hargamax);
+        }
 
         $data_search = $data_search->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier')->orderBy('id')->get();
 
@@ -39,8 +47,9 @@ class MasterItemsController extends Controller
         if ($method == 'new') {
             $item = [];
         } else {
-            $item = MasterItem::find($id);
+            $item = MasterItem::with(['KategoriItem'])->find($id);
         }
+        $data['kategori_items'] = KategoriItem::all();
         $data['item'] = $item;
         $data['method'] = $method;
         return view('master_items.form.index', $data);
@@ -48,7 +57,7 @@ class MasterItemsController extends Controller
 
     public function singleView($kode)
     {
-        $data['data'] = MasterItem::where('kode', $kode)->first();
+        $data['data'] = MasterItem::with(['KategoriItem'])->where('kode', $kode)->first();
         return view('master_items.single.index', $data);
     }
 
@@ -66,12 +75,23 @@ class MasterItemsController extends Controller
         }
 
         $data_item->nama = $request->nama;
+        $data_item->kategori_item_id = $request->kategori_item_id;
         $data_item->harga_beli = $request->harga_beli;
         $data_item->laba = $request->laba;
         $data_item->kode = $kode;
         $data_item->supplier = $request->supplier;
         $data_item->jenis = $request->jenis;
+
+        if ($request->hasFile('foto')) {
+            $request->validate([
+                'foto' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+            $request->file('foto')->store('images', 'public');
+            $data_item->foto = $request->file('foto')->store('images', 'public');
+        }
+        // dd($data_item->foto);
         $data_item->save();
+
 
         return redirect('master-items');
     }
